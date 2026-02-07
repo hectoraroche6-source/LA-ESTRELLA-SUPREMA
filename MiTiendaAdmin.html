@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Tienda Gold - Admin</title>
+    <style>
+        :root {
+            --dorado: #c5a059;
+            --dorado-hover: #b08d4b;
+            --negro: #1a1a1a;
+            --blanco: #ffffff;
+            --gris-fondo: #f4f4f4;
+            --borde: #d1d1d1;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--gris-fondo); 
+            margin: 0; 
+            padding: 15px;
+            color: var(--negro);
+        }
+
+        .search-wrapper {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto 20px;
+        }
+
+        #input-busqueda {
+            width: 100%;
+            padding: 12px 45px 12px 20px;
+            border: 2px solid var(--borde);
+            border-radius: 30px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .lupa-btn {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--dorado);
+            cursor: pointer;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: 2px solid var(--dorado);
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .tab-btn.active {
+            background: var(--dorado);
+            color: white;
+        }
+
+        .productos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .producto-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            text-align: center;
+            padding-bottom: 10px;
+        }
+
+        .producto-card img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+        }
+
+        .admin-panel {
+            margin-top: 40px;
+            padding: 20px;
+            background: white;
+            border: 2px dashed var(--dorado);
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="search-wrapper">
+    <input type="text" id="input-busqueda" placeholder="Buscar producto..." onkeyup="filtrar()">
+    <button class="lupa-btn">🔍</button>
+</div>
+
+<div class="tabs" id="tab-container"></div>
+<div class="productos-grid" id="lista-productos"></div>
+
+<script>
+let db = JSON.parse(localStorage.getItem('tienda_data')) || {
+    secciones: ["Combos", "Extras"],
+    productos: []
+};
+
+let seccionActual = db.secciones[0];
+
+function render() {
+    const tabCont = document.getElementById('tab-container');
+    tabCont.innerHTML = '';
+    db.secciones.forEach(s => {
+        tabCont.innerHTML += `<button class="tab-btn ${s === seccionActual ? 'active' : ''}" onclick="cambiarSeccion('${s}')">${s}</button>`;
+    });
+
+    const prodCont = document.getElementById('lista-productos');
+    prodCont.innerHTML = '';
+    db.productos.filter(p => p.seccion === seccionActual).forEach(p => {
+        prodCont.innerHTML += `
+            <div class="producto-card">
+                <img src="${p.foto}">
+                <h3>${p.nombre}</h3>
+                <p>${p.precio} CUP</p>
+            </div>`;
+    });
+}
+
+function cambiarSeccion(s) {
+    seccionActual = s;
+    render();
+}
+
+function filtrar() {
+    const texto = document.getElementById('input-busqueda').value.toLowerCase();
+    document.querySelectorAll('.producto-card').forEach(card => {
+        const nombre = card.querySelector('h3').innerText.toLowerCase();
+        card.style.display = nombre.includes(texto) ? 'block' : 'none';
+    });
+}
+
+render();
+</script>
+
+</body>
+</html>
