@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title id="site-title">LA ESTRELLA SUPREMA</title>
+    <style>
+        :root {
+            --primary: #2e4d23; /* Verde Mate */
+            --accent: #C0C0C0; /* Plata */
+            --btn-grad: linear-gradient(135deg, #2e4d23, #1a2e15);
+            --border-grad: linear-gradient(45deg, #87CEEB, #C0C0C0);
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; background: #fff; border: 12px solid; border-image: var(--border-grad) 1;
+            min-height: 100vh; transition: 0.3s; overflow-x: hidden;
+        }
+        .hidden { display: none !important; }
+        
+        /* PORTADA */
+        #portada {
+            height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background-size: cover; background-position: center; position: relative; color: white; text-align: center;
+        }
+        #portada::before { content: ""; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); }
+        .portada-content { z-index: 10; width: 90%; }
+        
+        @keyframes wobble { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .btn-elegant {
+            padding: 18px 45px; font-size: 1.1rem; font-weight: bold; color: white;
+            background: var(--btn-grad); border: 2px solid var(--accent); border-radius: 50px;
+            cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.3); transition: 0.3s;
+            animation: wobble 4s infinite; text-transform: uppercase;
+        }
+
+        /* TIENDA Y CATEGORÍAS */
+        .container { max-width: 1000px; margin: auto; padding: 20px; }
+        .category-bar { display: flex; gap: 10px; overflow-x: auto; padding: 15px 0; margin-bottom: 20px; scrollbar-width: none; }
+        .category-bar::-webkit-scrollbar { display: none; }
+        .cat-btn { 
+            padding: 10px 22px; border-radius: 25px; border: 1px solid #ddd; background: #f0f0f0; 
+            white-space: nowrap; cursor: pointer; font-weight: 600; transition: 0.3s; font-size: 0.9rem;
+        }
+        .cat-btn.active { background: var(--primary); color: white; border-color: var(--primary); transform: scale(1.05); }
+
+        /* PRODUCTOS */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .card { background: white; border-radius: 15px; overflow: hidden; border: 1px solid #eee; position: relative; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .card img { width: 100%; height: 160px; object-fit: cover; cursor: pointer; }
+        .card-info { padding: 12px; text-align: center; }
+        .price { color: var(--primary); font-weight: bold; display: block; margin-bottom: 10px; font-size: 1.1rem; }
+
+        /* CARRITO Y NOTIFICACIÓN IPHONE */
+        #cart-trigger {
+            position: fixed; bottom: 30px; right: 30px; width: 70px; height: 70px;
+            background: var(--btn-grad); color: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 28px;
+            border: 3px solid var(--accent); z-index: 1000; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+        .badge {
+            position: absolute; top: -5px; right: -5px; background: #ff3b30; color: white;
+            font-size: 13px; min-width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; 
+            border-radius: 50%; font-weight: bold; border: 2px solid white; animation: pop 0.3s ease;
+        }
+        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+        /* ANIMACIÓN FLY */
+        .fly-item {
+            position: fixed; z-index: 9999; width: 60px; height: 60px;
+            border-radius: 50%; object-fit: cover; pointer-events: none;
+            transition: all 0.8s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+
+        /* MODALES */
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; display:flex; justify-content:center; align-items:center; }
+        .modal-content { background:white; width:92%; max-width:480px; border-radius:25px; padding:25px; max-height:85vh; overflow-y:auto; border: 4px solid var(--primary); position: relative; }
+
+        /* ADMIN */
+        .admin-row { background:#f9f9f9; padding:15px; border-radius:15px; margin-bottom:15px; border: 1px solid #eee; }
+        input, select, textarea { width:100%; padding:12px; margin:8px 0; border:1px solid #ccc; border-radius:10px; font-size: 1rem; box-sizing: border-box; }
+        #admin-btn { position: fixed; top:20px; right:20px; background:white; border-radius:50%; width:45px; height:45px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:3000; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        #login-trap { position: fixed; bottom:0; left:0; width:50px; height:50px; z-index:4000; opacity: 0; }
+    </style>
+</head>
+<body>
+
+<audio id="snd-iphone" src="https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3"></audio>
+
+<section id="portada">
+    <div class="portada-content">
+        <h1 id="txt-p-tit">LA ESTRELLA SUPREMA</h1>
+        <p id="txt-p-fra">Calidad que inspira, precios que enamoran.</p>
+        <button class="btn-elegant" onclick="showShop()">Ver Combos</button>
+    </div>
+</section>
+
+<section id="tienda" class="hidden">
+    <div class="container">
+        <input type="text" id="search" placeholder="🔍 ¿Qué buscas hoy? (Arroz, Aseo, Combo...)" style="width:100%; padding:16px; border-radius:35px; border:2px solid #eee; margin-bottom:15px; outline:none; font-size:1rem;" onkeyup="renderShop()">
+        
+        <div class="category-bar">
+            <button class="cat-btn active" onclick="filterCat('TODOS', this)">TODOS</button>
+            <button class="cat-btn" onclick="filterCat('COMBOS', this)">COMBOS</button>
+            <button class="cat-btn" onclick="filterCat('ASEO', this)">ASEO</button>
+            <button class="cat-btn" onclick="filterCat('CÁRNICOS', this)">CÁRNICOS</button>
+            <button class="cat-btn" onclick="filterCat('A GUSTO', this)">✨ ARMA TU COMBO</button>
+        </div>
+
+        <div id="shop-grid" class="grid"></div>
+    </div>
+</section>
+
+<div id="cart-trigger" class="hidden" onclick="openCart()">
+    🛒 <div id="cart-count" class="badge hidden">0</div>
+</div>
+
+<div id="login-trap" onclick="checkAdmin()"></div>
+<div id="admin-btn" class="hidden" onclick="openAdmin()">⚙️</div>
+
+<div id="modal-cart" class="modal hidden">
+    <div class="modal-content">
+        <h2 style="text-align:center; color:var(--primary); margin-top:0;">MI PEDIDO</h2>
+        <div id="cart-items-list"></div>
+        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+        <h3 id="cart-total" style="text-align:right; color:var(--primary);">Costo Total: $0.00 USD</h3>
+        <button class="btn-elegant" style="width:100%; border-radius:15px; animation:none;" onclick="sendOrder()">Hacer Pedido</button>
+        <button onclick="closeModals()" style="width:100%; margin-top:15px; background:none; border:none; color:gray; cursor:pointer;">Regresar a la tienda</button>
+    </div>
+</div>
+
+<div id="modal-admin" class="modal hidden">
+    <div class="modal-content" style="max-width:600px;">
+        <h3 style="text-align:center;">PANEL DE ADMINISTRACIÓN</h3>
+        
+        <div class="admin-row">
+            <h4>Estilo de Botones (Colores Híbridos)</h4>
+            <select id="cfg-btn-style" onchange="updateBtnStyle(this.value)">
+                <option value="linear-gradient(135deg, #2e4d23, #1a2e15)">Verde Mate y Negro (Original)</option>
+                <option value="linear-gradient(135deg, #000000, #434343)">Negro Carbón y Plata</option>
+                <option value="linear-gradient(135deg, #bf953f, #8e6d13)">Dorado Real y Bronce</option>
+                <option value="linear-gradient(135deg, #1e3c72, #2a5298)">Azul Zafiro Profundo</option>
+                <option value="linear-gradient(135deg, #b22222, #800000)">Rojo Rubí y Tinto</option>
+            </select>
+        </div>
+
+        <div class="admin-row" style="border: 2px solid var(--primary);">
+            <h4>➕ CREAR NUEVO PRODUCTO</h4>
+            <input id="new-name" placeholder="Nombre del combo o producto">
+            <input id="new-price" type="number" placeholder="Precio en USD">
+            <select id="new-cat">
+                <option value="COMBOS">Categoría: COMBOS</option>
+                <option value="ASEO">Categoría: ASEO</option>
+                <option value="CÁRNICOS">Categoría: CÁRNICOS</option>
+                <option value="A GUSTO">Categoría: PRODUCTO A GUSTO (Venta suelta)</option>
+            </select>
+            <textarea id="new-desc" placeholder="Contenido (Ej: 10lb arroz, 2 jabones...)"></textarea>
+            <label>Foto (Cámara o Galería):</label>
+            <input type="file" id="new-img" accept="image/*">
+            <button onclick="saveProduct()" style="background:var(--primary); color:white; padding:15px; width:100%; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">GUARDAR EN TIENDA</button>
+        </div>
+
+        <div class="admin-row">
+            <h4>📦 GESTIÓN DE INVENTARIO</h4>
+            <div id="admin-inventory" style="max-height:200px; overflow-y:auto;"></div>
+        </div>
+        
+        <button onclick="closeModals()" style="width:100%; margin-top:10px; padding:10px; border-radius:10px; background:#f0f0f0; border:none;">Cerrar Panel</button>
+    </div>
+</div>
+
+<script>
+    // BASE DE DATOS LOCAL
+    let db = JSON.parse(localStorage.getItem('estrella_v5')) || {
+        pTit: "LA ESTRELLA SUPREMA",
+        pFra: "Calidad que inspira, precios que enamoran.",
+        pImg: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80",
+        btnStyle: "linear-gradient(135deg, #2e4d23, #1a2e15)",
+        items: []
+    };
+    let cart = [];
+    let currentCat = 'TODOS';
+
+    window.onload = () => { applyStyles(); renderShop(); };
+
+    function applyStyles() {
+        document.getElementById('txt-p-tit').innerText = db.pTit;
+        document.getElementById('txt-p-fra').innerText = db.pFra;
+        document.getElementById('portada').style.backgroundImage = `url(${db.pImg})`;
+        document.documentElement.style.setProperty('--btn-grad', db.btnStyle);
+        document.getElementById('cfg-btn-style').value = db.btnStyle;
+    }
+
+    function showShop() {
+        document.getElementById('portada').classList.add('hidden');
+        document.getElementById('tienda').classList.remove('hidden');
+        document.getElementById('cart-trigger').classList.remove('hidden');
+    }
+
+    function filterCat(cat, btn) {
+        currentCat = cat;
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderShop();
+    }
+
+    function renderShop() {
+        const grid = document.getElementById('shop-grid');
+        grid.innerHTML = '';
+        const search = document.getElementById('search').value.toLowerCase();
+        
+        const filtered = db.items.filter(i => {
+            const matchesSearch = i.name.toLowerCase().includes(search);
+            const matchesCat = currentCat === 'TODOS' || i.cat === currentCat;
+            return matchesSearch && matchesCat;
+        });
+
+        if(filtered.length === 0) {
+            grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#999; padding:40px;">No se encontraron productos en esta categoría.</p>`;
+        }
+
+        filtered.forEach(p => {
+            grid.innerHTML += `
+                <div class="card" id="prod-${p.id}">
+                    <img src="${p.img}" onclick="alert('DETALLES DE: ${p.name}\\n\\n${p.desc}')">
+                    <div class="card-info">
+                        <b style="display:block; min-height:40px;">${p.name}</b>
+                        <span class="price">$${p.price.toFixed(2)} USD</span>
+                        <button class="btn-elegant" style="padding:10px; width:100%; font-size:0.85rem; border-radius:10px; animation:none;" onclick="addToCart(${p.id}, this)">Añadir 🛒</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function addToCart(id, btn) {
+        const product = db.items.find(p => p.id === id);
+        const exists = cart.find(c => c.id === id);
+        if(exists) exists.qty++; else cart.push({...product, qty: 1});
+
+        // 1. Sonido iPhone
+        const sound = document.getElementById('snd-iphone');
+        sound.currentTime = 0; sound.play();
+
+        // 2. Animación Fly (Volar al carrito)
+        const imgToClone = btn.closest('.card').querySelector('img');
+        flyToCart(imgToClone);
+
+        updateCartUI();
+    }
+
+    function flyToCart(imgElement) {
+        const fly = imgElement.cloneNode();
+        const rect = imgElement.getBoundingClientRect();
+        const cartRect = document.getElementById('cart-trigger').getBoundingClientRect();
+
+        fly.classList.add('fly-item');
+        fly.style.left = rect.left + 'px';
+        fly.style.top = rect.top + 'px';
+        document.body.appendChild(fly);
+
+        setTimeout(() => {
+            fly.style.left = (cartRect.left + 20) + 'px';
+            fly.style.top = (cartRect.top + 20) + 'px';
+            fly.style.transform = 'scale(0.1) rotate(360deg)';
+            fly.style.opacity = '0';
+        }, 50);
+
+        setTimeout(() => fly.remove(), 800);
+    }
+
+    function updateCartUI() {
+        const count = cart.reduce((acc, curr) => acc + curr.qty, 0);
+        const badge = document.getElementById('cart-count');
+        if(count > 0) {
+            badge.innerText = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+
+    function openCart() {
+        const list = document.getElementById('cart-items-list');
+        list.innerHTML = '';
+        let total = 0;
+        
+        if(cart.length === 0) {
+            list.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Tu carrito está vacío.</p>';
+        } else {
+            cart.forEach((item, idx) => {
+                const sub = item.price * item.qty;
+                total += sub;
+                list.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center; font-size:0.95rem;">
+                        <div style="flex:1;"><b>${item.name}</b><br><small style="color:#666;">$${item.price} x ${item.qty}</small></div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button onclick="modQty(${idx},-1)" style="width:25px; height:25px; border-radius:50%; border:1px solid #ccc;">-</button>
+                            <b>${item.qty}</b>
+                            <button onclick="modQty(${idx},1)" style="width:25px; height:25px; border-radius:50%; border:1px solid #ccc;">+</button>
+                        </div>
+                        <div style="width:80px; text-align:right;"><b>$${sub.toFixed(2)}</b></div>
+                    </div>`;
+            });
+        }
+        document.getElementById('cart-total').innerText = `Total: $${total.toFixed(2)} USD`;
+        document.getElementById('modal-cart').classList.remove('hidden');
+    }
+
+    function modQty(i, v) {
+        cart[i].qty += v;
+        if(cart[i].qty < 1) cart.splice(i, 1);
+        openCart();
+        updateCartUI();
+    }
+
+    function sendOrder() {
+        if(!cart.length) return;
+        let msg = "🌟 *LA ESTRELLA SUPREMA - PEDIDO* 🌟%0A%0A";
+        let total = 0;
+        cart.forEach(p => {
+            msg += `• ${p.name} (x${p.qty}) - $${(p.price*p.qty).toFixed(2)} USD%0A`;
+            total += p.price*p.qty;
+        });
+        msg += `%0A💰 *TOTAL: ${total.toFixed(2)} USD*%0A%0A📑 *VALE DE VENTA:*%0A👤 *Nombre:*%0A🆔 *CI:*%0A📍 *Dirección:*%0A📱 *Teléfono:*%0A🏁 *Referencia:*%0A💵 *Moneda de pago:*%0A%0A🚚 *Garantía de entrega: 48 horas máx.*`;
+        window.open(`https://wa.me/5358876921?text=${msg}`);
+    }
+
+    // LÓGICA DE ADMINISTRACIÓN
+    function checkAdmin() {
+        if(prompt("Usuario:") === "HÉCTOR" && prompt("Contraseña:") === "VIRTUS123VIRTUS") {
+            document.getElementById('admin-btn').classList.remove('hidden');
+            alert("Acceso concedido");
+        }
+    }
+
+    function openAdmin() { renderInventory(); document.getElementById('modal-admin').classList.remove('hidden'); }
+
+    function saveProduct() {
+        const name = document.getElementById('new-name').value;
+        const price = document.getElementById('new-price').value;
+        const cat = document.getElementById('new-cat').value;
+        const desc = document.getElementById('new-desc').value;
+        const file = document.getElementById('new-img').files[0];
+
+        if(!name || !price) return alert("Nombre y precio son obligatorios.");
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            db.items.push({ 
+                id: Date.now(), 
+                name, 
+                price: parseFloat(price), 
+                cat, 
+                desc, 
+                img: e.target.result || 'https://via.placeholder.com/150' 
+            });
+            localStorage.setItem('estrella_v5', JSON.stringify(db));
+            renderShop(); renderInventory();
+            alert("Producto añadido con éxito");
+            // Limpiar campos
+            document.getElementById('new-name').value = '';
+            document.getElementById('new-price').value = '';
+            document.getElementById('new-desc').value = '';
+        };
+        if(file) reader.readAsDataURL(file); else reader.onload({});
+    }
+
+    function renderInventory() {
+        const inv = document.getElementById('admin-inventory');
+        inv.innerHTML = '<h4>Inventario Actual</h4>';
+        db.items.forEach((p, i) => {
+            inv.innerHTML += `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee; font-size:12px;">
+                <span><b>[${p.cat}]</b> ${p.name}</span>
+                <button onclick="deleteProd(${i})" style="color:red; border:none; background:none; cursor:pointer;">Eliminar 🗑️</button>
+            </div>`;
+        });
+    }
+
+    function deleteProd(i) {
+        if(confirm("¿Seguro que quieres eliminar este producto?")) {
+            db.items.splice(i,1);
+            localStorage.setItem('estrella_v5', JSON.stringify(db));
+            renderInventory(); renderShop();
+        }
+    }
+    
+    function updateBtnStyle(val) { db.btnStyle = val; applyStyles(); localStorage.setItem('estrella_v5', JSON.stringify(db)); }
+    function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden')); }
+</script>
+</body>
+</html>
