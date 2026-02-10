@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title id="site-title">LA ESTRELLA SUPREMA</title>
+    <style>
+        :root {
+            --primary: #2e4d23;
+            --accent: #C0C0C0;
+            --btn-grad: linear-gradient(135deg, #2e4d23, #1a2e15);
+            --border-grad: linear-gradient(45deg, #2e4d23, #C0C0C0);
+            --glow: rgba(46, 77, 35, 0.3);
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; background: #fff; border: 10px solid; border-image: var(--border-grad) 1;
+            min-height: 100vh; transition: 0.5s; overflow-x: hidden;
+        }
+        .hidden { display: none !important; }
+        
+        /* PORTADA */
+        #portada {
+            height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background-size: cover; background-position: center; position: relative; color: white; text-align: center;
+        }
+        #portada::before { content: ""; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); }
+        .portada-content { z-index: 10; width: 90%; }
+        
+        .btn-elegant {
+            padding: 18px 45px; font-size: 1.1rem; font-weight: bold; color: white;
+            background: var(--btn-grad); border: 2px solid var(--accent); border-radius: 50px;
+            cursor: pointer; box-shadow: 0 0 15px var(--glow); transition: 0.3s;
+            animation: pulse 3s infinite; text-transform: uppercase;
+        }
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0px var(--glow); } 50% { transform: scale(1.05); box-shadow: 0 0 20px var(--glow); } 100% { transform: scale(1); box-shadow: 0 0 0px var(--glow); } }
+
+        /* TIENDA */
+        .container { max-width: 1000px; margin: auto; padding: 20px; }
+        .category-bar { display: flex; gap: 10px; overflow-x: auto; padding: 15px 0; margin-bottom: 20px; scrollbar-width: none; }
+        .cat-btn { 
+            padding: 10px 22px; border-radius: 25px; border: 1px solid #ddd; background: #f0f0f0; 
+            white-space: nowrap; cursor: pointer; font-weight: 600; transition: 0.3s;
+        }
+        .cat-btn.active { background: var(--btn-grad); color: white; border: 1px solid var(--accent); transform: translateY(-3px); }
+
+        /* PRODUCTOS CON BORDES HÍBRIDOS */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 20px; }
+        .card { 
+            background: white; border-radius: 20px; overflow: hidden; position: relative; transition: 0.3s; 
+            border: 3px solid; border-image: var(--border-grad) 1; box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+        .card img { width: 100%; height: 160px; object-fit: cover; }
+        .card-info { padding: 12px; text-align: center; }
+        .price { color: var(--primary); font-weight: 800; display: block; margin-bottom: 10px; font-size: 1.2rem; }
+
+        /* CARRITO FUTURISTA */
+        #cart-trigger {
+            position: fixed; bottom: 30px; right: 30px; width: 75px; height: 75px;
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            border: 2px solid var(--accent); z-index: 1000; cursor: pointer;
+            box-shadow: 0 0 20px var(--glow), inset 0 0 10px rgba(255,255,255,0.5);
+        }
+        .cart-icon-svg { width: 35px; height: 35px; fill: var(--primary); filter: drop-shadow(0 0 5px var(--glow)); }
+        .badge {
+            position: absolute; top: 0; right: 0; background: #ff3b30; color: white;
+            font-size: 12px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; 
+            border-radius: 50%; font-weight: bold; border: 2px solid white;
+        }
+
+        /* ANIMACIÓN FLY */
+        .fly-item {
+            position: fixed; z-index: 9999; width: 60px; height: 60px; border-radius: 50%;
+            object-fit: cover; pointer-events: none; transition: all 0.8s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+
+        /* ADMIN */
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; display:flex; justify-content:center; align-items:center; }
+        .modal-content { background:white; width:90%; max-width:500px; border-radius:30px; padding:25px; max-height:85vh; overflow-y:auto; border: 5px solid; border-image: var(--border-grad) 1; }
+        .admin-section { background:#f8f9fa; padding:15px; border-radius:20px; margin-bottom:15px; border: 1px solid #eee; }
+        input, select, textarea { width:100%; padding:12px; margin:8px 0; border:1px solid #ddd; border-radius:12px; box-sizing: border-box; }
+        #admin-btn { position: fixed; top:20px; right:20px; background:white; border-radius:50%; width:45px; height:45px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:3000; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+<audio id="snd-add" src="https://assets.mixkit.co/sfx/preview/mixkit-positive-interface-click-1112.mp3"></audio>
+
+<section id="portada">
+    <div class="portada-content">
+        <h1 id="txt-p-tit">LA ESTRELLA SUPREMA</h1>
+        <p id="txt-p-fra">Calidad que inspira, precios que enamoran.</p>
+        <button class="btn-elegant" onclick="showShop()">Entrar a la Estrella</button>
+    </div>
+</section>
+
+<section id="tienda" class="hidden">
+    <div class="container">
+        <input type="text" id="search" placeholder="🔍 Buscar en el inventario..." style="width:100%; padding:16px; border-radius:30px; border:2px solid #f0f0f0; margin-bottom:15px; outline:none;" onkeyup="renderShop()">
+        
+        <div id="cat-list" class="category-bar">
+            </div>
+
+        <div id="shop-grid" class="grid"></div>
+    </div>
+</section>
+
+<div id="cart-trigger" class="hidden" onclick="openCart()">
+    <svg class="cart-icon-svg" viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+    <div id="cart-count" class="badge hidden">0</div>
+</div>
+
+<div id="login-zone" onclick="checkAdmin()" style="position:fixed; bottom:0; left:0; width:50px; height:50px; z-index:4000; opacity:0;"></div>
+<div id="admin-btn" class="hidden" onclick="openAdmin()">⚙️</div>
+
+<div id="modal-cart" class="modal hidden">
+    <div class="modal-content">
+        <h2 style="text-align:center; color:var(--primary);">VALE DE PEDIDO</h2>
+        <div id="cart-items-list"></div>
+        <h3 id="cart-total" style="text-align:right;">Total: $0.00 USD</h3>
+        <button class="btn-elegant" style="width:100%; border-radius:15px;" onclick="sendOrder()">PEDIR POR WHATSAPP</button>
+        <button onclick="closeModals()" style="width:100%; margin-top:15px; background:none; border:none; color:gray;">Cerrar</button>
+    </div>
+</div>
+
+<div id="modal-admin" class="modal hidden">
+    <div class="modal-content">
+        <h2 style="text-align:center;">PANEL SUPREMO</h2>
+        
+        <div class="admin-section">
+            <h4>🎨 Apariencia e Imagen</h4>
+            <label>Color Híbrido:</label>
+            <select id="cfg-theme" onchange="updateTheme(this.value)">
+                <option value="linear-gradient(45deg, #2e4d23, #C0C0C0)">Verde y Plata</option>
+                <option value="linear-gradient(45deg, #000, #C0C0C0)">Negro y Plata</option>
+                <option value="linear-gradient(45deg, #bf953f, #fcf6ba)">Dorado Supremo</option>
+                <option value="linear-gradient(45deg, #1e3c72, #2a5298)">Azul Galaxia</option>
+            </select>
+            <label>Fondo de Portada:</label>
+            <input type="file" id="cfg-bg" accept="image/*">
+        </div>
+
+        <div class="admin-section">
+            <h4>🏷️ Gestionar Renglones</h4>
+            <div style="display:flex; gap:5px;">
+                <input id="new-cat-name" placeholder="Nombre (ej: LACTEOS)">
+                <button onclick="addCategory()" style="background:var(--primary); color:white; border:none; border-radius:10px; padding:0 15px;">+</button>
+            </div>
+            <div id="admin-cats" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="admin-section">
+            <h4>📦 Nuevo Producto</h4>
+            <input id="p-name" placeholder="Nombre">
+            <input id="p-price" type="number" placeholder="Precio USD">
+            <select id="p-cat"></select>
+            <textarea id="p-desc" placeholder="Descripción"></textarea>
+            <input type="file" id="p-img" accept="image/*">
+            <button onclick="saveProduct()" style="width:100%; background:green; color:white; border:none; padding:12px; border-radius:10px;">GUARDAR</button>
+        </div>
+
+        <div id="admin-inv" class="admin-section"></div>
+        <button onclick="closeModals()" style="width:100%; padding:10px; border-radius:10px;">SALIR</button>
+    </div>
+</div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('estrella_v6')) || {
+        pTit: "LA ESTRELLA SUPREMA", pFra: "Calidad que inspira, precios que enamoran.",
+        pImg: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200",
+        theme: "linear-gradient(45deg, #2e4d23, #C0C0C0)",
+        cats: ["COMBOS", "ASEO", "CÁRNICOS"],
+        items: []
+    };
+    let cart = [];
+    let currentCat = 'TODOS';
+
+    window.onload = () => { applyStyles(); renderCats(); renderShop(); };
+
+    function applyStyles() {
+        document.getElementById('txt-p-tit').innerText = db.pTit;
+        document.getElementById('txt-p-fra').innerText = db.pFra;
+        document.getElementById('portada').style.backgroundImage = `url(${db.pImg})`;
+        document.documentElement.style.setProperty('--border-grad', db.theme);
+        // Extraer color sólido para el glow
+        const mainColor = db.theme.includes("#2e4d23") ? "rgba(46,77,35,0.4)" : "rgba(0,0,0,0.2)";
+        document.documentElement.style.setProperty('--glow', mainColor);
+    }
+
+    function renderCats() {
+        const bar = document.getElementById('cat-list');
+        const select = document.getElementById('p-cat');
+        const adminCats = document.getElementById('admin-cats');
+        
+        const allCats = ["TODOS", ...db.cats, "ARMA TU COMBO"];
+        bar.innerHTML = '';
+        select.innerHTML = '';
+        adminCats.innerHTML = '';
+
+        allCats.forEach(c => {
+            const isActive = currentCat === c ? 'active' : '';
+            bar.innerHTML += `<button class="cat-btn ${isActive}" onclick="filterCat('${c}', this)">${c}</button>`;
+            if(c !== "TODOS") select.innerHTML += `<option value="${c}">${c}</option>`;
+        });
+
+        db.cats.forEach((c, i) => {
+            adminCats.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${c}</span> <button onclick="delCategory(${i})" style="color:red; border:none; background:none;">🗑️</button></div>`;
+        });
+    }
+
+    function addCategory() {
+        const val = document.getElementById('new-cat-name').value.toUpperCase();
+        if(val && !db.cats.includes(val)) {
+            db.cats.push(val);
+            saveDB(); renderCats();
+            document.getElementById('new-cat-name').value = '';
+        }
+    }
+
+    function delCategory(i) {
+        db.cats.splice(i, 1);
+        saveDB(); renderCats();
+    }
+
+    function filterCat(cat, btn) {
+        currentCat = cat;
+        renderCats(); renderShop();
+    }
+
+    function renderShop() {
+        const grid = document.getElementById('shop-grid');
+        grid.innerHTML = '';
+        const search = document.getElementById('search').value.toLowerCase();
+        
+        const filtered = db.items.filter(i => {
+            const matchesSearch = i.name.toLowerCase().includes(search);
+            const targetCat = currentCat === 'ARMA TU COMBO' ? 'A GUSTO' : currentCat;
+            const matchesCat = currentCat === 'TODOS' || i.cat === targetCat || (currentCat === 'ARMA TU COMBO' && i.cat === 'A GUSTO');
+            return matchesSearch && matchesCat;
+        });
+
+        filtered.forEach(p => {
+            grid.innerHTML += `
+                <div class="card">
+                    <img src="${p.img}" onclick="alert('${p.desc}')">
+                    <div class="card-info">
+                        <b>${p.name}</b>
+                        <span class="price">$${p.price.toFixed(2)} USD</span>
+                        <button class="btn-elegant" style="padding:10px; width:100%; font-size:0.8rem; animation:none;" onclick="addToCart(${p.id}, this)">Añadir 🛒</button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function addToCart(id, btn) {
+        const product = db.items.find(p => p.id === id);
+        const exists = cart.find(c => c.id === id);
+        if(exists) exists.qty++; else cart.push({...product, qty: 1});
+
+        document.getElementById('snd-add').currentTime = 0;
+        document.getElementById('snd-add').play();
+
+        const img = btn.closest('.card').querySelector('img');
+        const fly = img.cloneNode();
+        const rect = img.getBoundingClientRect();
+        const cartRect = document.getElementById('cart-trigger').getBoundingClientRect();
+
+        fly.classList.add('fly-item');
+        fly.style.left = rect.left + 'px'; fly.style.top = rect.top + 'px';
+        document.body.appendChild(fly);
+
+        setTimeout(() => {
+            fly.style.left = (cartRect.left + 15) + 'px';
+            fly.style.top = (cartRect.top + 15) + 'px';
+            fly.style.transform = 'scale(0.1)'; fly.style.opacity = '0';
+        }, 50);
+        setTimeout(() => fly.remove(), 800);
+
+        updateCartUI();
+    }
+
+    function updateCartUI() {
+        const count = cart.reduce((acc, curr) => acc + curr.qty, 0);
+        const badge = document.getElementById('cart-count');
+        badge.innerText = count;
+        badge.classList.toggle('hidden', count === 0);
+    }
+
+    function openCart() {
+        const list = document.getElementById('cart-items-list');
+        list.innerHTML = ''; let total = 0;
+        cart.forEach((item, idx) => {
+            total += item.price * item.qty;
+            list.innerHTML += `
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span><b>${item.name}</b> (x${item.qty})</span>
+                    <b>$${(item.price*item.qty).toFixed(2)}</b>
+                </div>`;
+        });
+        document.getElementById('cart-total').innerText = `Total: $${total.toFixed(2)} USD`;
+        document.getElementById('modal-cart').classList.remove('hidden');
+    }
+
+    function sendOrder() {
+        let msg = "🌟 *LA ESTRELLA SUPREMA* 🌟%0A%0A";
+        let total = 0;
+        cart.forEach(p => { msg += `• ${p.name} (x${p.qty}) - $${(p.price*p.qty).toFixed(2)}%0A`; total += p.price*p.qty; });
+        msg += `%0A💰 *TOTAL: ${total.toFixed(2)} USD*%0A%0A📝 *DATOS:*%0A👤 Nombre:%0A📍 Dirección:%0A📱 Teléfono:`;
+        window.open(`https://wa.me/5358876921?text=${msg}`);
+    }
+
+    function checkAdmin() {
+        if(prompt("User:") === "HÉCTOR" && prompt("Pass:") === "VIRTUS123VIRTUS") {
+            document.getElementById('admin-btn').classList.remove('hidden');
+        }
+    }
+
+    function openAdmin() {
+        renderInvAdmin();
+        document.getElementById('modal-admin').classList.remove('hidden');
+    }
+
+    function saveProduct() {
+        const file = document.getElementById('p-img').files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            db.items.push({
+                id: Date.now(), name: document.getElementById('p-name').value,
+                price: parseFloat(document.getElementById('p-price').value),
+                cat: document.getElementById('p-cat').value,
+                desc: document.getElementById('p-desc').value,
+                img: e.target.result || 'https://via.placeholder.com/150'
+            });
+            saveDB(); renderShop(); renderInvAdmin(); alert("Ok!");
+        };
+        if(file) reader.readAsDataURL(file); else reader.onload({});
+    }
+
+    function renderInvAdmin() {
+        const inv = document.getElementById('admin-inv');
+        inv.innerHTML = '<h4>Inventario</h4>';
+        db.items.forEach((p, i) => {
+            inv.innerHTML += `<div style="font-size:11px; display:flex; justify-content:space-between;"><span>${p.name}</span> <button onclick="delProd(${i})">🗑️</button></div>`;
+        });
+    }
+
+    function delProd(i) { db.items.splice(i, 1); saveDB(); renderInvAdmin(); renderShop(); }
+
+    function updateTheme(val) { db.theme = val; applyStyles(); saveDB(); }
+
+    function showShop() { document.getElementById('portada').classList.add('hidden'); document.getElementById('tienda').classList.remove('hidden'); document.getElementById('cart-trigger').classList.remove('hidden'); }
+    function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden')); }
+    function saveDB() { localStorage.setItem('estrella_v6', JSON.stringify(db)); }
+
+    // Cambiar Imagen Portada
+    document.getElementById('cfg-bg').onchange = function(e) {
+        const reader = new FileReader();
+        reader.onload = function(ev) { db.pImg = ev.target.result; applyStyles(); saveDB(); };
+        reader.readAsDataURL(e.target.files[0]);
+    };
+</script>
+</body>
+</html>
