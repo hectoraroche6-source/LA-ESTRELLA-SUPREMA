@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LA ESTRELLA SUPREMA | OFICIAL</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #2e4d23;
+            --accent: #C0C0C0;
+            --grad-green: linear-gradient(135deg, #2e4d23, #1a2e15);
+            --shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: #f0f2f0; color: #333; padding-bottom: 90px; }
+        .hidden { display: none !important; }
+
+        /* PORTADA */
+        #portada {
+            height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200');
+            background-size: cover; background-position: center; color: white; text-align: center;
+        }
+
+        .btn-main {
+            padding: 16px 45px; font-size: 1.1rem; font-weight: bold; color: white;
+            background: var(--grad-green); border: 2px solid var(--accent);
+            border-radius: 50px; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-transform: uppercase; transition: 0.3s;
+        }
+        .btn-main:active { transform: scale(0.95); }
+
+        /* TIENDA */
+        .container { max-width: 900px; margin: auto; padding: 15px; }
+        #search { width: 100%; padding: 15px; border-radius: 30px; border: 2px solid var(--primary); margin-bottom: 20px; box-sizing: border-box; outline: none; }
+        
+        .cat-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
+        .cat-btn { padding: 10px 18px; border-radius: 20px; border: none; background: white; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .cat-btn.active { background: var(--primary); color: white; }
+
+        /* PRODUCTOS */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 15px; }
+        .card { background: white; border-radius: 18px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; border: 1px solid #eee; }
+        .card img { width: 100%; height: 150px; object-fit: cover; border-bottom: 3px solid var(--primary); }
+        .card-body { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; text-align: center; }
+        .card-title { font-weight: bold; font-size: 1rem; margin-bottom: 4px; color: #111; }
+        .card-desc { font-size: 0.8rem; color: #666; margin-bottom: 10px; font-style: italic; flex-grow: 1; }
+        .card-price { color: var(--primary); font-size: 1.2rem; font-weight: 800; margin-bottom: 10px; display: block; }
+        
+        .add-btn { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+
+        /* MODALES */
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 92%; max-width: 480px; border-radius: 20px; padding: 25px; max-height: 85vh; overflow-y: auto; }
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 10px; font-size: 1rem; box-sizing: border-box; }
+
+        /* CARRITO FLOTANTE */
+        #cart-float { position: fixed; bottom: 25px; right: 25px; width: 65px; height: 65px; background: var(--grad-green); border-radius: 50%; border: 3px solid var(--accent); display: flex; align-items: center; justify-content: center; color: white; font-size: 25px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); z-index: 1000; cursor: pointer; }
+        .badge { position: absolute; top: -5px; right: -5px; background: #ff3b30; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border: 2px solid white; }
+    </style>
+</head>
+<body>
+
+<audio id="snd-click" src="https://assets.mixkit.co/sfx/preview/mixkit-positive-interface-click-1112.mp3"></audio>
+
+<section id="portada">
+    <div style="padding: 20px;">
+        <h1 style="font-size: 2.5rem; margin-bottom: 0;">LA ESTRELLA SUPREMA</h1>
+        <p style="font-size: 1.2rem; opacity: 0.9;">Excelencia en cada entrega</p>
+        <button class="btn-main" onclick="irTienda()">ENTRAR A LA TIENDA</button>
+    </div>
+</section>
+
+<section id="tienda" class="hidden">
+    <div class="container">
+        <div onclick="loginAdmin()" style="position: absolute; top: 0; right: 0; width: 60px; height: 60px; z-index: 100;"></div>
+
+        <input type="text" id="search" placeholder="🔍 ¿Qué buscas hoy?" onkeyup="dibujarTienda()">
+        
+        <div id="barra-categorias" class="cat-bar"></div>
+
+        <h2 id="titulo-seccion" style="color: var(--primary); margin: 10px 0;">PRODUCTOS</h2>
+        <div id="contenedor-productos" class="grid">Cargando base de datos global...</div>
+    </div>
+</section>
+
+<div id="cart-float" class="hidden" onclick="abrirCarrito()">
+    🛒 <div id="cart-badge" class="badge hidden">0</div>
+</div>
+
+<div id="modal-cart" class="modal hidden">
+    <div class="modal-content">
+        <h2 style="color: var(--primary); text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">TU PEDIDO</h2>
+        <div id="lista-carrito"></div>
+        <h3 style="text-align: right; margin-top: 20px;">TOTAL: <span id="total-pedido">$0</span></h3>
+        <button class="btn-main" style="width: 100%;" onclick="enviarWhatsApp()">PEDIR POR WHATSAPP</button>
+        <button onclick="cerrarModales()" style="width: 100%; margin-top: 15px; background: none; border: none; color: #888; font-weight: bold; cursor: pointer;">SEGUIR COMPRANDO</button>
+    </div>
+</div>
+
+<div id="modal-admin" class="modal hidden">
+    <div class="modal-content">
+        <h2 style="text-align: center; color: var(--primary);">PANEL SUPREMO</h2>
+        
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 15px; border: 1px solid #ddd;">
+            <h4 style="margin-top: 0;">📦 NUEVO PRODUCTO</h4>
+            <input id="adm-nombre" placeholder="Nombre (ej: H.Upman Selecto)">
+            <textarea id="adm-desc" placeholder="Descripción/Contenido (ej: Trae 20 cigarrillos fuertes...)" rows="3"></textarea>
+            <input id="adm-precio" type="number" placeholder="Precio (ej: 400)">
+            <select id="adm-cat-select"></select>
+            <label style="font-size: 12px; font-weight: bold; display: block; margin-bottom: 5px;">FOTO DEL PRODUCTO:</label>
+            <input type="file" id="adm-foto" accept="image/*">
+            <button class="add-btn" style="background: #28a745;" onclick="guardarProducto()">GUARDAR EN LA NUBE ☁️</button>
+        </div>
+
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 15px; border: 1px solid #ddd; margin-top: 15px;">
+            <h4 style="margin-top: 0;">🏷️ CATEGORÍAS</h4>
+            <div style="display: flex; gap: 5px;">
+                <input id="adm-nueva-cat" placeholder="Nueva Categoría" style="margin-bottom: 0;">
+                <button onclick="crearCategoria()" style="background: var(--primary); color: white; border: none; border-radius: 10px; padding: 0 15px;">+</button>
+            </div>
+            <div id="adm-lista-cats" style="margin-top: 10px; font-size: 14px;"></div>
+        </div>
+
+        <button onclick="cerrarModales()" style="width: 100%; margin-top: 20px; padding: 12px; border-radius: 10px; border: 1px solid #ccc;">CERRAR PANEL</button>
+    </div>
+</div>
+
+<script>
+    // 1. CONFIGURACIÓN FIREBASE
+    const firebaseConfig = {
+        apiKey: "AIzaSyCJbDPG-EC19g7ifX4SKF85uAsOF0ODHSo",
+        authDomain: "la-estrella-suprema.firebaseapp.com",
+        databaseURL: "https://la-estrella-suprema-default-rtdb.firebaseio.com",
+        projectId: "la-estrella-suprema",
+        storageBucket: "la-estrella-suprema.firebasestorage.app",
+        messagingSenderId: "246077605279",
+        appId: "1:246077605279:web:9b0556eab180f38f2369aa"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database().ref('estrella_v3');
+
+    // 2. ESTADO DE LA APP
+    let datosApp = { items: [], cats: ["CIGARROS", "COMBOS", "ASEO"] };
+    let carrito = [];
+    let catActual = 'TODOS';
+
+    // 3. CARGA DE DATOS EN TIEMPO REAL
+    database.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            datosApp = data;
+            if (!datosApp.items) datosApp.items = [];
+            if (!datosApp.cats) datosApp.cats = ["GENERAL"];
+            actualizarTodo();
+        } else {
+            // Inicialización si la base de datos está vacía
+            database.set(datosApp);
+        }
+    });
+
+    function actualizarTodo() {
+        // Dibujar Barra de Categorías
+        const barra = document.getElementById('barra-categorias');
+        const comboCat = document.getElementById('adm-cat-select');
+        const listaAdmCats = document.getElementById('adm-lista-cats');
+        
+        let htmlBarra = `<button class="cat-btn ${catActual==='TODOS'?'active':''}" onclick="filtrar('TODOS')">🌟 TODOS</button>`;
+        let htmlCombo = '';
+        let htmlAdmCats = '';
+
+        datosApp.cats.forEach((c, i) => {
+            htmlBarra += `<button class="cat-btn ${catActual===c?'active':''}" onclick="filtrar('${c}')">${c}</button>`;
+            htmlCombo += `<option value="${c}">${c}</option>`;
+            htmlAdmCats += `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;"><span>${c}</span> <button onclick="borrarCat(${i})" style="color:red; border:none; background:none;">🗑️</button></div>`;
+        });
+
+        barra.innerHTML = htmlBarra;
+        comboCat.innerHTML = htmlCombo;
+        listaAdmCats.innerHTML = htmlAdmCats;
+
+        dibujarTienda();
+    }
+
+    function dibujarTienda() {
+        const grid = document.getElementById('contenedor-productos');
+        const buscar = document.getElementById('search').value.toLowerCase();
+        grid.innerHTML = '';
+
+        const filtrados = datosApp.items.filter(p => {
+            const cumpleCat = (catActual === 'TODOS' || p.cat === catActual);
+            const cumpleBusqueda = (p.nombre.toLowerCase().includes(buscar) || (p.desc && p.desc.toLowerCase().includes(buscar)));
+            return cumpleCat && cumpleBusqueda;
+        });
+
+        if (filtrados.length === 0) {
+            grid.innerHTML = '<p style="text-align:center; width:100%; grid-column:1/-1;">No se encontraron productos.</p>';
+            return;
+        }
+
+        filtrados.forEach(p => {
+            grid.innerHTML += `
+                <div class="card">
+                    <img src="${p.foto}" loading="lazy">
+                    <div class="card-body">
+                        <div class="card-title">${p.nombre}</div>
+                        <div class="card-desc">${p.desc || ''}</div>
+                        <span class="card-price">$${p.precio}</span>
+                        <button class="add-btn" onclick="agregarAlCarrito(${p.id})">AÑADIR 🛒</button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    // 4. FUNCIONES DE ADMINISTRADOR
+    function guardarProducto() {
+        const nombre = document.getElementById('adm-nombre').value;
+        const desc = document.getElementById('adm-desc').value;
+        const precio = document.getElementById('adm-precio').value;
+        const cat = document.getElementById('adm-cat-select').value;
+        const file = document.getElementById('adm-foto').files[0];
+
+        if (!nombre || !precio) return alert("Nombre y Precio son obligatorios");
+
+        const procesarYGuardar = (imgFinal) => {
+            const nuevo = {
+                id: Date.now(),
+                nombre: nombre,
+                desc: desc,
+                precio: parseFloat(precio),
+                cat: cat,
+                foto: imgFinal
+            };
+            if (!datosApp.items) datosApp.items = [];
+            datosApp.items.push(nuevo);
+            database.set(datosApp).then(() => {
+                alert("✅ Guardado en la nube correctamente");
+                document.getElementById('adm-nombre').value = '';
+                document.getElementById('adm-desc').value = '';
+                document.getElementById('adm-precio').value = '';
+            });
+        };
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 400;
+                    const scale = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scale;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    procesarYGuardar(canvas.toDataURL('image/jpeg', 0.7));
+                };
+            };
+            reader.readAsDataURL(file);
+        } else {
+            procesarYGuardar("https://via.placeholder.com/150?text=Sin+Foto");
+        }
+    }
+
+    function crearCategoria() {
+        const n = document.getElementById('adm-nueva-cat').value.toUpperCase().trim();
+        if (n && !datosApp.cats.includes(n)) {
+            datosApp.cats.push(n);
+            database.set(datosApp);
+            document.getElementById('adm-nueva-cat').value = '';
+        }
+    }
+
+    function borrarCat(i) {
+        if (confirm("¿Borrar categoría?")) {
+            datosApp.cats.splice(i, 1);
+            database.set(datosApp);
+        }
+    }
+
+    // 5. FUNCIONES DE COMPRA
+    function agregarAlCarrito(id) {
+        const p = datosApp.items.find(x => x.id === id);
+        const existe = carrito.find(x => x.id === id);
+        if (existe) existe.cant++; else carrito.push({...p, cant: 1});
+        document.getElementById('snd-click').play();
+        actualizarBadge();
+    }
+
+    function actualizarBadge() {
+        const badge = document.getElementById('cart-badge');
+        const total = carrito.reduce((a, b) => a + b.cant, 0);
+        badge.innerText = total;
+        badge.classList.toggle('hidden', total === 0);
+    }
+
+    function abrirCarrito() {
+        const lista = document.getElementById('lista-carrito');
+        lista.innerHTML = '';
+        let total = 0;
+        carrito.forEach((p, i) => {
+            const sub = p.precio * p.cant;
+            total += sub;
+            lista.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                    <div><b>${p.nombre}</b><br><small>${p.cant} x $${p.precio}</small></div>
+                    <div style="text-align:right;"><b>$${sub}</b><br><button onclick="borrarDelCarrito(${i})" style="color:red; border:none; background:none; font-size:12px;">Eliminar</button></div>
+                </div>`;
+        });
+        document.getElementById('total-pedido').innerText = '$' + total;
+        document.getElementById('modal-cart').classList.remove('hidden');
+    }
+
+    function borrarDelCarrito(i) {
+        carrito.splice(i, 1);
+        actualizarBadge();
+        abrirCarrito();
+    }
+
+    function enviarWhatsApp() {
+        if (carrito.length === 0) return;
+        let msg = "🌟 *LA ESTRELLA SUPREMA* 🌟%0A%0A";
+        let total = 0;
+        carrito.forEach(p => {
+            msg += `▪️ ${p.nombre} (x${p.cant}) - $${p.precio * p.cant}%0A`;
+            total += p.precio * p.cant;
+        });
+        msg += `%0A💰 *TOTAL: $${total}*%0A%0A📍 *Datos:*%0A- Nombre:%0A- Dirección:`;
+        window.open(`https://wa.me/5358876921?text=${msg}`);
+    }
+
+    // 6. NAVEGACIÓN Y ACCESO
+    function irTienda() {
+        document.getElementById('portada').classList.add('hidden');
+        document.getElementById('tienda').classList.remove('hidden');
+        document.getElementById('cart-float').classList.remove('hidden');
+    }
+
+    function filtrar(c) {
+        catActual = c;
+        document.getElementById('titulo-seccion').innerText = c;
+        actualizarTodo();
+    }
+
+    function loginAdmin() {
+        if (prompt("Usuario:") === "HÉCTOR" && prompt("Pass:") === "VIRTUS123VIRTUS") {
+            document.getElementById('modal-admin').classList.remove('hidden');
+        }
+    }
+
+    function cerrarModales() {
+        document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
+    }
+</script>
+</body>
+</html>
