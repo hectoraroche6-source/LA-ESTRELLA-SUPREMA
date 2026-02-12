@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LA ESTRELLA SUPREMA</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        :root { --p: #2e4d23; --s: #C0C0C0; --g: linear-gradient(135deg, #2e4d23, #1a2e15); }
+        body { font-family: sans-serif; margin: 0; background: #f4f4f4; padding-bottom: 80px; transition: 0.3s; }
+        .hidden { display: none !important; }
+        #portada { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000 url('https://images.unsplash.com/photo-1542838132-92c53300491e?w=800') center/cover no-repeat; color: #fff; text-align: center; position: relative; }
+        #portada::after { content:''; position: absolute; inset:0; background: rgba(0,0,0,0.6); z-index:1; }
+        .p-content { z-index: 2; padding: 20px; }
+        .btn { padding: 15px 40px; border-radius: 50px; border: 2px solid var(--s); background: var(--g); color: #fff; font-weight: bold; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .container { max-width: 600px; margin: auto; padding: 10px; }
+        #search { width: 100%; padding: 12px; border-radius: 25px; border: 1px solid var(--p); margin: 10px 0; box-sizing: border-box; }
+        .cat-bar { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
+        .c-btn { padding: 8px 15px; border-radius: 15px; border: none; background: #fff; font-size: 13px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .c-btn.active { background: var(--p); color: #fff; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column; border: 1px solid #eee; }
+        .card img { width: 100%; height: 130px; object-fit: cover; }
+        .card-body { padding: 8px; flex: 1; display: flex; flex-direction: column; text-align: center; }
+        .card-t { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
+        .card-d { font-size: 11px; color: #666; margin-bottom: 8px; font-style: italic; line-height: 1.2; flex: 1; }
+        .card-p { color: var(--p); font-weight: 900; font-size: 16px; margin-bottom: 8px; display: block; }
+        .add { width: 100%; padding: 8px; background: var(--p); color: #fff; border: none; border-radius: 6px; font-weight: bold; font-size: 12px; }
+        #cart-f { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: var(--g); border-radius: 50%; border: 2px solid var(--s); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+        .badge { position: absolute; top: -2px; right: -2px; background: red; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 1.5px solid #fff; }
+        .m { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; display: flex; justify-content: center; align-items: center; }
+        .m-c { background: #fff; width: 90%; max-width: 400px; border-radius: 15px; padding: 20px; max-height: 80vh; overflow-y: auto; }
+        input, select, textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+<audio id="sd" src="https://assets.mixkit.co/sfx/preview/mixkit-positive-interface-click-1112.mp3"></audio>
+<section id="portada"><div class="p-content"><h1>LA ESTRELLA SUPREMA</h1><p>Calidad Global</p><button class="btn" onclick="go()">Entrar</button></div></section>
+<section id="tienda" class="hidden"><div class="container"><div onclick="adm()" style="position:fixed;top:0;right:0;width:40px;height:40px;z-index:50;"></div><input type="text" id="search" placeholder="Buscar..." onkeyup="draw()"><div id="c-bar" class="cat-bar"></div><div id="g-prod" class="grid">Cargando...</div></div></section>
+<div id="cart-f" class="hidden" onclick="shC()">🛒<div id="b-count" class="badge hidden">0</div></div>
+<div id="m-cart" class="m hidden"><div class="m-c"><h3>Tu Pedido</h3><div id="l-cart"></div><hr><h4>Total: <span id="t-cart">$0</span></h4><button class="btn" style="width:100%" onclick="wsp()">Pedir por WhatsApp</button><button onclick="clM()" style="width:100%;background:none;border:none;color:grey;margin-top:10px;">Cerrar</button></div></div>
+<div id="m-adm" class="m hidden"><div class="m-c"><h3>Panel Control</h3><input id="a-n" placeholder="Nombre"><textarea id="a-d" placeholder="Descripción/Contenido" rows="2"></textarea><input id="a-p" type="number" placeholder="Precio"><select id="a-c"></select><input type="file" id="a-i" accept="image/*"><button class="add" style="padding:15px" onclick="save()">GUARDAR PRODUCTO</button><hr><input id="a-nc" placeholder="Nueva Categoría"><button onclick="addC()">Añadir Cat</button><div id="l-adm-c" style="margin-top:10px"></div><button onclick="clM()" style="width:100%;margin-top:15px">Cerrar</button></div></div>
+<script>
+    const firebaseConfig = { apiKey: "AIzaSyCJbDPG-EC19g7ifX4SKF85uAsOF0ODHSo", authDomain: "la-estrella-suprema.firebaseapp.com", databaseURL: "https://la-estrella-suprema-default-rtdb.firebaseio.com", projectId: "la-estrella-suprema", storageBucket: "la-estrella-suprema.firebasestorage.app", messagingSenderId: "246077605279", appId: "1:246077605279:web:9b0556eab180f38f2369aa" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database().ref('estrella_final');
+    let data = { items: [], cats: ["CIGARROS", "COMBOS"] }, cart = [], curC = 'TODOS';
+    db.on('value', s => { if(s.val()){ data = s.val(); if(!data.items) data.items = []; if(!data.cats) data.cats = ["GENERAL"]; } else { db.set(data); } upd(); });
+    function upd() {
+        let b = document.getElementById('c-bar'), sc = document.getElementById('a-c'), la = document.getElementById('l-adm-c');
+        let hB = `<button class="c-btn ${curC==='TODOS'?'active':''}" onclick="f('TODOS')">TODOS</button>`, hS = '', hA = '';
+        data.cats.forEach((c, i) => { hB += `<button class="c-btn ${curC===c?'active':''}" onclick="f('${c}')">${c}</button>`; hS += `<option value="${c}">${c}</option>`; hA += `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">${c}<span onclick="delC(${i})" style="color:red">🗑️</span></div>`; });
+        b.innerHTML = hB; sc.innerHTML = hS; la.innerHTML = hA; draw();
+    }
+    function draw() {
+        let g = document.getElementById('g-prod'), q = document.getElementById('search').value.toLowerCase(); g.innerHTML = '';
+        let fP = data.items.filter(p => (curC === 'TODOS' || p.cat === curC) && (p.n.toLowerCase().includes(q) || (p.d && p.d.toLowerCase().includes(q))));
+        fP.forEach(p => { g.innerHTML += `<div class="card"><img src="${p.i}" loading="lazy"><div class="card-body"><div class="card-t">${p.n}</div><div class="card-d">${p.d||''}</div><span class="card-p">$${p.p}</span><button class="add" onclick="addT(${p.id})">AÑADIR</button></div></div>`; });
+    }
+    function save() {
+        let n = document.getElementById('a-n').value, d = document.getElementById('a-d').value, p = document.getElementById('a-p').value, c = document.getElementById('a-c').value, f = document.getElementById('a-i').files[0];
+        if(!n || !p) return alert("Nombre y Precio obligatorios");
+        const goS = (i) => { let o = { id: Date.now(), n, d, p: parseFloat(p), cat: c, i }; data.items.push(o); db.set(data).then(() => { alert("Guardado!"); document.getElementById('a-n').value = ''; document.getElementById('a-d').value = ''; document.getElementById('a-p').value = ''; }); };
+        if(f) { const r = new FileReader(); r.onload = (e) => { const im = new Image(); im.src = e.target.result; im.onload = () => { const cv = document.createElement('canvas'); const m = 400, s = m/im.width; cv.width = m; cv.height = im.height*s; cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height); goS(cv.toDataURL('image/jpeg', 0.6)); }; }; r.readAsDataURL(f); } else goS("https://via.placeholder.com/150");
+    }
+    function addC() { let v = document.getElementById('a-nc').value.toUpperCase(); if(v && !data.cats.includes(v)) { data.cats.push(v); db.set(data); document.getElementById('a-nc').value = ''; } }
+    function delC(i) { if(confirm("Borrar?")) { data.cats.splice(i,1); db.set(data); } }
+    function f(c) { curC = c; upd(); }
+    function addT(id) { let p = data.items.find(x => x.id === id), e = cart.find(x => x.id === id); if(e) e.q++; else cart.push({...p, q: 1}); document.getElementById('sd').play(); uB(); }
+    function uB() { let t = cart.reduce((a, b) => a + b.q, 0); let b = document.getElementById('b-count'); b.innerText = t; b.classList.toggle('hidden', t === 0); }
+    function shC() { let l = document.getElementById('l-cart'), t = 0; l.innerHTML = ''; cart.forEach((p, i) => { let s = p.p*p.q; t += s; l.innerHTML += `<div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px;"><div><b>${p.n}</b><br>${p.q} x $${p.p}</div><div>$${s} <span onclick="cart.splice(${i},1);shC();uB()" style="color:red">x</span></div></div>`; }); document.getElementById('t-cart').innerText = '$' + t; document.getElementById('m-cart').classList.remove('hidden'); }
+    function wsp() { let m = "🌟 *LA ESTRELLA SUPREMA* 🌟%0A%0A", t = 0; cart.forEach(p => { m += `▪️ ${p.n} (x${p.q}) - $${p.p*p.q}%0A`; t += p.p*p.q; }); m += `%0A💰 *TOTAL: $${t}*%0A%0A📍 *Datos:*%0A- Nombre:%0A- Dirección:`; window.open(`https://wa.me/5358876921?text=${m}`); }
+    function go() { document.getElementById('portada').classList.add('hidden'); document.getElementById('tienda').classList.remove('hidden'); document.getElementById('cart-f').classList.remove('hidden'); }
+    function adm() { if(prompt("User:") === "HÉCTOR" && prompt("Pass:") === "VIRTUS123VIRTUS") document.getElementById('m-adm').classList.remove('hidden'); }
+    function clM() { document.querySelectorAll('.m').forEach(x => x.classList.add('hidden')); }
+</script>
+</body>
+</html>
