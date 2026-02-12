@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LA ESTRELLA DE CUBA</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+    <style>
+        /* --- 1. ESTILO FUTURISTA (DARK GLASS) --- */
+        :root {
+            --bg: #050505;
+            --glass: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --gold: #D4AF37;
+            --gold-glow: 0 0 15px rgba(212, 175, 55, 0.4);
+            --text: #ffffff;
+            --accent: #00ff88;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+        
+        /* UTILIDADES */
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.8s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* PORTADA */
+        #landing {
+            position: fixed; inset: 0; z-index: 3000;
+            background: black url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1000&auto=format&fit=crop') center/cover no-repeat;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #landing::after { content:''; position:absolute; inset:0; background: rgba(0,0,0,0.6); }
+        .landing-content { position: relative; z-index: 2; text-align: center; }
+        
+        .btn-neon {
+            padding: 18px 50px; border: 1px solid var(--gold); background: rgba(0,0,0,0.5);
+            color: var(--gold); font-size: 16px; letter-spacing: 4px; text-transform: uppercase; font-weight: bold;
+            cursor: pointer; backdrop-filter: blur(10px); transition: 0.3s; border-radius: 50px;
+            box-shadow: var(--gold-glow);
+        }
+        .btn-neon:active { transform: scale(0.95); background: var(--gold); color: black; }
+
+        /* HEADER */
+        header { padding: 20px; text-align: center; background: linear-gradient(to bottom, #000, transparent); }
+        h1 { margin: 0; font-weight: 300; letter-spacing: 3px; color: var(--gold); text-shadow: var(--gold-glow); }
+        .sub-text { font-size: 10px; opacity: 0.7; letter-spacing: 2px; margin-top: 5px; text-transform: uppercase; }
+
+        /* BUSCADOR */
+        .search-box {
+            width: 90%; margin: 15px auto; padding: 12px 20px;
+            background: var(--glass); border: 1px solid var(--glass-border); border-radius: 30px;
+            color: white; font-family: 'Montserrat'; outline: none; display: block;
+            backdrop-filter: blur(5px); transition: 0.3s;
+        }
+        .search-box:focus { border-color: var(--gold); box-shadow: var(--gold-glow); }
+
+        /* CATEGORÍAS (CARRUSEL) */
+        .cat-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 10px 20px; scrollbar-width: none; }
+        .cat-pill {
+            background: var(--glass); padding: 10px 25px; border-radius: 50px; white-space: nowrap;
+            border: 1px solid transparent; color: #aaa; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        .cat-pill.active { background: var(--gold); color: black; box-shadow: var(--gold-glow); }
+
+        /* GRID PRODUCTOS */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; padding-bottom: 100px; }
+        .card {
+            background: var(--glass); border-radius: 20px; overflow: hidden;
+            border: 1px solid var(--glass-border); backdrop-filter: blur(10px);
+            display: flex; flex-direction: column; transition: 0.3s;
+        }
+        .card:active { transform: scale(0.98); }
+        .card-img { width: 100%; height: 140px; object-fit: cover; }
+        .card-body { padding: 12px; display: flex; flex-direction: column; flex: 1; }
+        .c-title { font-size: 13px; font-weight: bold; margin-bottom: 5px; color: white; }
+        .c-desc { font-size: 10px; color: #ccc; margin-bottom: 10px; line-height: 1.2; flex: 1; }
+        .c-price { color: var(--gold); font-weight: bold; font-size: 16px; margin-bottom: 8px; }
+        .c-unit { font-size: 10px; color: #888; }
+        .btn-add {
+            background: linear-gradient(45deg, var(--gold), #b8860b); border: none; width: 100%;
+            padding: 10px; border-radius: 12px; color: black; font-weight: bold; font-size: 12px; cursor: pointer;
+        }
+
+        /* CARRITO (GLASS PANEL) */
+        #cart-bubble {
+            position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px;
+            background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; color: black; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 200; cursor: pointer;
+            transition: 0.3s;
+        }
+        #cart-bubble:active { transform: scale(0.9); }
+        .badge { position: absolute; top: 0; right: 0; background: red; color: white; font-size: 10px; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+        .modal-glass {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2500;
+            backdrop-filter: blur(20px); display: flex; flex-direction: column;
+            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-glass.open { transform: translateY(0); }
+        .modal-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); }
+        .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
+        .cart-item { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; font-size: 14px; }
+        
+        .checkout-area { padding: 20px; background: #111; border-top: 1px solid var(--glass-border); }
+        .total-row { display: flex; justify-content: space-between; font-size: 20px; color: var(--gold); font-weight: bold; margin-bottom: 20px; }
+        
+        /* ADMIN INVISIBLE & LOGIN */
+        #admin-trigger { position: fixed; bottom: 0; left: 0; width: 50px; height: 50px; z-index: 4000; }
+        
+        .login-box {
+            width: 80%; max-width: 300px; margin: auto; padding: 30px;
+            background: #1a1a1a; border-radius: 20px; border: 1px solid var(--glass-border); text-align: center;
+        }
+        .login-input { width: 100%; padding: 15px; background: black; border: 1px solid #333; color: white; border-radius: 10px; margin-bottom: 15px; text-align: center; font-size: 16px; }
+
+        /* ADMIN PANEL UI */
+        .admin-module { background: #111; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #333; }
+        .admin-module h3 { color: var(--gold); margin-top: 0; font-size: 14px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        input[type="file"] { width: 100%; font-size: 12px; margin-top: 10px; }
+
+        /* TOAST NOTIFICACIÓN */
+        #toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: var(--gold); color: black; padding: 10px 30px; border-radius: 30px;
+            font-weight: bold; font-size: 12px; z-index: 5000; opacity: 0; pointer-events: none; transition: 0.3s;
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="snd-click" src="https://assets.mixkit.co/sfx/preview/mixkit-modern-technology-select-3124.mp3"></audio>
+    <audio id="snd-cash" src="https://assets.mixkit.co/sfx/preview/mixkit-cash-register-purchase-873.mp3"></audio>
+
+    <div id="toast">Producto Agregado</div>
+
+    <section id="landing">
+        <div class="landing-content">
+            <h1 style="font-size: 3rem; margin-bottom: 10px; color:white;">LA ESTRELLA</h1>
+            <p style="color: #888; letter-spacing: 5px; margin-bottom: 40px;">DE CUBA</p>
+            <button class="btn-neon" onclick="entrarApp()">ENTRAR A LA TIENDA</button>
+        </div>
+    </section>
+
+    <section id="app" class="hidden">
+        <header>
+            <h1 id="header-title">LA ESTRELLA DE CUBA</h1>
+            <div id="header-sub" class="sub-text">PREMIUM STORE</div>
+            <input type="text" id="buscador" class="search-box" placeholder="🔍 Buscar..." onkeyup="renderTienda()">
+        </header>
+
+        <div id="cat-container" class="cat-scroll">
+            </div>
+
+        <div id="grid-productos" class="grid">
+            <div style="color: white; text-align:center; grid-column: 1/-1;">Cargando inventario...</div>
+        </div>
+    </section>
+
+    <div id="cart-bubble" onclick="toggleModal('modal-cart', true)" class="hidden">
+        <i class="fas fa-shopping-cart"></i>
+        <div id="badge-count" class="badge hidden">0</div>
+    </div>
+
+    <div id="modal-cart" class="modal-glass">
+        <div class="modal-header">
+            <h2 style="margin:0; color:white;">TU PEDIDO</h2>
+            <button onclick="toggleModal('modal-cart', false)" style="background:none; border:none; color:white; font-size:20px;">✕</button>
+        </div>
+        <div id="cart-list" class="modal-body"></div>
+        <div class="checkout-area">
+            <div class="total-row">
+                <span>TOTAL:</span>
+                <span id="cart-total-usd">$0.00 USD</span>
+            </div>
+            <button onclick="enviarPedido()" class="btn-neon" style="width:100%; font-size:14px; padding: 15px;">CONFIRMAR POR WHATSAPP <i class="fab fa-whatsapp"></i></button>
+        </div>
+    </div>
+
+    <div id="admin-trigger" onclick="abrirLogin()"></div>
+    
+    <div id="modal-login" class="modal-glass" style="justify-content:center; align-items:center;">
+        <div class="login-box">
+            <h3 style="color:var(--gold);">ACCESO PRIVADO</h3>
+            <input type="text" id="login-user" class="login-input" placeholder="Usuario">
+            <input type="password" id="login-pass" class="login-input" placeholder="Contraseña">
+            <button onclick="validarLogin()" class="btn-neon" style="width:100%; padding: 10px;">ACCEDER</button>
+            <button onclick="toggleModal('modal-login', false)" style="background:none; border:none; color:#666; margin-top:10px;">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="modal-admin" class="modal-glass">
+        <div class="modal-header">
+            <h2 style="color:var(--gold);">PANEL DE MANDO</h2>
+            <button onclick="location.reload()" style="color:red; background:none; border:none;">SALIR</button>
+        </div>
+        <div class="modal-body">
+            
+            <div class="admin-module">
+                <h3>📦 NUEVO PRODUCTO / COMBO</h3>
+                <input id="adm-nombre" class="login-input" style="text-align:left;" placeholder="Nombre (Ej: Combo Fiesta)">
+                <textarea id="adm-desc" class="login-input" style="text-align:left;" placeholder="Descripción / Contenido..." rows="3"></textarea>
+                <div style="display:flex; gap:10px;">
+                    <input id="adm-precio" type="number" class="login-input" placeholder="Precio USD">
+                    <select id="adm-unidad" class="login-input">
+                        <option value="Unid">Unid</option>
+                        <option value="Lb">Lb</option>
+                        <option value="Kg">Kg</option>
+                        <option value="Lt">Lt</option>
+                    </select>
+                </div>
+                <select id="adm-categoria" class="login-input" style="text-align:left;"></select>
+                
+                <label style="color:white; display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                    <input type="checkbox" id="adm-es-combo"> Es para "ARMAR MI COMBO"
+                </label>
+
+                <input type="file" id="adm-foto" accept="image/*">
+                <button onclick="guardarProducto()" class="btn-add" style="margin-top:15px; background: var(--accent); color:black;">GUARDAR EN NUBE ☁️</button>
+            </div>
+
+            <div class="admin-module">
+                <h3>⚙️ CONFIGURACIÓN</h3>
+                <input id="conf-titulo" class="login-input" placeholder="Título Web">
+                <input id="conf-sub" class="login-input" placeholder="Subtítulo">
+                <button onclick="guardarConfig()" class="btn-add">ACTUALIZAR TEXTOS</button>
+            </div>
+
+            <div class="admin-module">
+                <h3>📂 CATEGORÍAS</h3>
+                <div style="display:flex; gap:10px;">
+                    <input id="new-cat" class="login-input" placeholder="Nueva Categoría">
+                    <button onclick="crearCat()" class="btn-add" style="width:60px;">+</button>
+                </div>
+                <div id="list-cats-admin" style="color:#888; font-size:12px; margin-top:10px;"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        /* --- LÓGICA DEL SISTEMA --- */
+        
+        // 1. CONEXIÓN FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyCJbDPG-EC19g7ifX4SKF85uAsOF0ODHSo",
+            authDomain: "la-estrella-suprema.firebaseapp.com",
+            databaseURL: "https://la-estrella-suprema-default-rtdb.firebaseio.com",
+            projectId: "la-estrella-suprema",
+            storageBucket: "la-estrella-suprema.firebasestorage.app",
+            messagingSenderId: "246077605279",
+            appId: "1:246077605279:web:9b0556eab180f38f2369aa"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database().ref('estrella_ultra_final'); // Nodo Limpio Final
+
+        // 2. VARIABLES GLOBALES
+        let DATOS = { productos: [], categorias: ["TODOS", "ARMAR MI COMBO", "CIGARROS"], config: {} };
+        let CARRITO = [];
+        let CAT_ACTUAL = 'TODOS';
+
+        // 3. SINCRONIZACIÓN REALTIME
+        db.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                DATOS = data;
+                if (!DATOS.productos) DATOS.productos = [];
+                if (!DATOS.categorias) DATOS.categorias = ["TODOS", "ARMAR MI COMBO"];
+                actualizarInterfaz();
+            } else {
+                // Primera vez
+                db.set({
+                    config: { titulo: "LA ESTRELLA DE CUBA", sub: "Premium Store" },
+                    categorias: ["TODOS", "ARMAR MI COMBO", "CIGARROS"],
+                    productos: []
+                });
+            }
+        });
+
+        // 4. FUNCIONES VISUALES
+        function entrarApp() {
+            document.getElementById('landing').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('landing').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                document.getElementById('cart-bubble').classList.remove('hidden');
+                document.getElementById('app').classList.add('fade-in');
+            }, 800);
+        }
+
+        function playSound(id) {
+            const audio = document.getElementById(id);
+            if(audio) { audio.currentTime = 0; audio.play().catch(e => console.log(e)); }
+        }
+
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.opacity = '1'; t.style.top = '40px';
+            setTimeout(() => { t.style.opacity = '0'; t.style.top = '20px'; }, 2000);
+        }
+
+        function toggleModal(id, open) {
+            const el = document.getElementById(id);
+            if(open) el.classList.add('open');
+            else el.classList.remove('open');
+            playSound('snd-click');
+        }
+
+        // 5. RENDERIZADO
+        function actualizarInterfaz() {
+            // Textos
+            if(DATOS.config) {
+                document.getElementById('header-title').innerText = DATOS.config.titulo || "LA ESTRELLA";
+                document.getElementById('header-sub').innerText = DATOS.config.sub || "STORE";
+                // Admin inputs
+                document.getElementById('conf-titulo').value = DATOS.config.titulo || "";
+                document.getElementById('conf-sub').value = DATOS.config.sub || "";
+            }
+
+            // Categorías (Tienda y Admin)
+            const catCont = document.getElementById('cat-container');
+            const admSel = document.getElementById('adm-categoria');
+            const admList = document.getElementById('list-cats-admin');
+            
+            catCont.innerHTML = '';
+            admSel.innerHTML = '';
+            admList.innerHTML = '';
+
+            DATOS.categorias.forEach((cat, index) => {
+                // Tienda Pills
+                catCont.innerHTML += `<button class="cat-pill ${CAT_ACTUAL===cat ? 'active':''}" onclick="filtrar('${cat}')">${cat}</button>`;
+                
+                // Admin Select
+                if(cat !== 'TODOS' && cat !== 'ARMAR MI COMBO') {
+                    admSel.innerHTML += `<option value="${cat}">${cat}</option>`;
+                    admList.innerHTML += `<span>${cat} <b onclick="borrarCat(${index})" style="color:red;cursor:pointer;">x</b>, </span>`;
+                }
+            });
+
+            renderTienda();
+        }
+
+        function filtrar(cat) {
+            CAT_ACTUAL = cat;
+            actualizarInterfaz();
+            playSound('snd-click');
+        }
+
+        function renderTienda() {
+            const grid = document.getElementById('grid-productos');
+            const search = document.getElementById('buscador').value.toLowerCase();
+            grid.innerHTML = '';
+
+            let filtrados = DATOS.productos.filter(p => {
+                let matchCat = false;
+                if (CAT_ACTUAL === 'TODOS') matchCat = true;
+                else if (CAT_ACTUAL === 'ARMAR MI COMBO') matchCat = p.esCombo === true;
+                else matchCat = p.cat === CAT_ACTUAL;
+
+                // Si estoy en una categoría normal, NO mostrar los ítems de armar combo sueltos, a menos que sea TODOS
+                if(CAT_ACTUAL !== 'ARMAR MI COMBO' && CAT_ACTUAL !== 'TODOS' && p.esCombo) matchCat = false;
+
+                const matchText = p.nombre.toLowerCase().includes(search) || (p.desc && p.desc.toLowerCase().includes(search));
+                return matchCat && matchText;
+            });
+
+            if(filtrados.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#555; margin-top:50px;">No hay productos aquí.</div>';
+                return;
+            }
+
+            filtrados.forEach(p => {
+                grid.innerHTML += `
+                <div class="card fade-in">
+                    <img src="${p.foto || 'https://via.placeholder.com/300'}" class="card-img" loading="lazy">
+                    <div class="card-body">
+                        <div class="c-title">${p.nombre}</div>
+                        <div class="c-desc">${p.desc || ''}</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <div class="c-price">$${p.precio}</div>
+                                <div class="c-unit">${p.unidad}</div>
+                            </div>
+                            <button class="btn-add" style="width:auto; padding:8px 15px;" onclick="agregar(${p.id})">AÑADIR +</button>
+                        </div>
+                    </div>
+                </div>`;
+            });
+        }
+
+        // 6. CARRITO LOGIC
+        function agregar(id) {
+            const prod = DATOS.productos.find(p => p.id === id);
+            const enCarrito = CARRITO.find(c => c.id === id);
+            
+            if(enCarrito) enCarrito.cant++;
+            else CARRITO.push({...prod, cant: 1});
+
+            playSound('snd-cash');
+            toast(`Agregado: ${prod.nombre}`);
+            actualizarCarritoBadge();
+            renderCarritoLista();
+        }
+
+        function actualizarCarritoBadge() {
+            const total = CARRITO.reduce((acc, item) => acc + item.cant, 0);
+            const badge = document.getElementById('badge-count');
+            badge.innerText = total;
+            badge.classList.toggle('hidden', total === 0);
+        }
+
+        function renderCarritoLista() {
+            const lista = document.getElementById('cart-list');
+            lista.innerHTML = '';
+            let totalUSD = 0;
+
+            if(CARRITO.length === 0) {
+                lista.innerHTML = '<p style="text-align:center; color:#888;">Tu carrito está vacío.</p>';
+                document.getElementById('cart-total-usd').innerText = '$0.00 USD';
+                return;
+            }
+
+            CARRITO.forEach((item, idx) => {
+                const subtotal = item.precio * item.cant;
+                totalUSD += subtotal;
+                lista.innerHTML += `
+                <div class="cart-item">
+                    <div>
+                        <div style="color:white; font-weight:bold;">${item.nombre}</div>
+                        <div style="color:#888; font-size:12px;">$${item.precio} x ${item.cant} ${item.unidad}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="color:var(--gold); font-weight:bold;">$${subtotal.toFixed(2)}</div>
+                        <button onclick="borrarItem(${idx})" style="color:red; background:none; border:none; font-size:12px;">Eliminar</button>
+                    </div>
+                </div>`;
+            });
+
+            document.getElementById('cart-total-usd').innerText = '$' + totalUSD.toFixed(2) + ' USD';
+        }
+
+        function borrarItem(idx) {
+            CARRITO.splice(idx, 1);
+            actualizarCarritoBadge();
+            renderCarritoLista();
+        }
+
+        function enviarPedido() {
+            if(CARRITO.length === 0) return alert("El carrito está vacío");
+            
+            let mensaje = "🌟 *PEDIDO LA ESTRELLA* 🌟%0A%0A";
+            let total = 0;
+
+            CARRITO.forEach(item => {
+                mensaje += `▪️ ${item.nombre} (${item.cant} ${item.unidad}) - $${item.precio * item.cant}%0A`;
+                total += item.precio * item.cant;
+            });
+
+            mensaje += `%0A💰 *TOTAL: $${total.toFixed(2)} USD*%0A%0A📍 *Nombre:* %0A📍 *Dirección:* `;
+            
+            window.open(`https://wa.me/5358876921?text=${mensaje}`, '_blank');
+        }
+
+        // 7. ADMIN LOGIC
+        function abrirLogin() { toggleModal('modal-login', true); }
+
+        function validarLogin() {
+            const u = document.getElementById('login-user').value;
+            const p = document.getElementById('login-pass').value;
+            if (u === 'Héctor' && p === 'JONIX123VIRTUS') {
+                toggleModal('modal-login', false);
+                toggleModal('modal-admin', true);
+            } else {
+                alert("ACCESO DENEGADO");
+            }
+        }
+
+        function guardarConfig() {
+            DATOS.config.titulo = document.getElementById('conf-titulo').value;
+            DATOS.config.sub = document.getElementById('conf-sub').value;
+            db.set(DATOS);
+            alert("Configuración Guardada");
+        }
+
+        function crearCat() {
+            const c = document.getElementById('new-cat').value.toUpperCase();
+            if(c && !DATOS.categorias.includes(c)) {
+                DATOS.categorias.push(c);
+                db.set(DATOS);
+                document.getElementById('new-cat').value = '';
+            }
+        }
+        
+        function borrarCat(index) {
+            if(confirm("¿Seguro?")) {
+                DATOS.categorias.splice(index, 1);
+                db.set(DATOS);
+            }
+        }
+
+        function guardarProducto() {
+            const nombre = document.getElementById('adm-nombre').value;
+            const desc = document.getElementById('adm-desc').value;
+            const precio = parseFloat(document.getElementById('adm-precio').value);
+            const unidad = document.getElementById('adm-unidad').value;
+            const cat = document.getElementById('adm-categoria').value;
+            const esCombo = document.getElementById('adm-es-combo').checked;
+            const fotoFile = document.getElementById('adm-foto').files[0];
+
+            if(!nombre || !precio) return alert("Faltan datos básicos");
+
+            // Función interna de guardado
+            const saveToDb = (fotoUrl) => {
+                const nuevo = {
+                    id: Date.now(),
+                    nombre, desc, precio, unidad, cat, esCombo,
+                    foto: fotoUrl
+                };
+                DATOS.productos.push(nuevo);
+                db.set(DATOS).then(() => {
+                    alert("Producto Guardado con Éxito");
+                    // Limpiar campos
+                    document.getElementById('adm-nombre').value = '';
+                    document.getElementById('adm-precio').value = '';
+                    document.getElementById('adm-desc').value = '';
+                });
+            };
+
+            if(fotoFile) {
+                // Compresión de imagen con Canvas
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 400; // Reducir ancho para ahorrar datos
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // Calidad 60%
+                        saveToDb(dataUrl);
+                    }
+                }
+                reader.readAsDataURL(fotoFile);
+            } else {
+                saveToDb('https://via.placeholder.com/300/000000/FFFFFF/?text=Sin+Foto');
+            }
+        }
+    </script>
+</body>
+</html>
