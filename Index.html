@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LA ESTRELLA SUPREMA | GLOBAL</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #2e4d23;
+            --accent: #C0C0C0;
+            --grad-green: linear-gradient(135deg, #2e4d23, #1a2e15);
+            --shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; 
+            background: #f4f4f4; padding-bottom: 80px;
+        }
+
+        .hidden { display: none !important; }
+
+        /* PORTADA */
+        #portada {
+            height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background-size: cover; background-position: center; position: relative; color: white; text-align: center;
+        }
+        #portada::before { content: ""; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); }
+        .portada-content { z-index: 10; position: relative; }
+
+        .btn-main {
+            padding: 15px 40px; font-size: 1.1rem; font-weight: bold; color: white;
+            background: var(--grad-green); border: 2px solid var(--accent);
+            border-radius: 50px; cursor: pointer; box-shadow: 0 0 15px rgba(46,77,35,0.5);
+            margin-top: 20px;
+        }
+
+        /* TIENDA */
+        .container { max-width: 800px; margin: auto; padding: 15px; }
+        
+        .cat-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
+        .cat-btn { 
+            padding: 8px 15px; border-radius: 20px; border: none; background: white; 
+            color: #333; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); white-space: nowrap;
+        }
+        .cat-btn.active { background: var(--primary); color: white; }
+
+        /* TARJETAS DE PRODUCTO */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .card { 
+            background: white; border-radius: 15px; overflow: hidden; 
+            box-shadow: var(--shadow); border: 1px solid #ddd; display: flex; flex-direction: column;
+        }
+        .card img { width: 100%; height: 140px; object-fit: cover; }
+        .card-body { padding: 10px; flex-grow: 1; display: flex; flex-direction: column; }
+        .card-title { font-weight: bold; font-size: 1rem; margin-bottom: 5px; color: #222; }
+        .card-desc { font-size: 0.8rem; color: #666; margin-bottom: 8px; font-style: italic; line-height: 1.2; flex-grow: 1; }
+        .card-price { color: var(--primary); font-size: 1.1rem; font-weight: 800; display: block; margin-bottom: 8px; }
+        
+        .add-btn { 
+            width: 100%; padding: 8px; background: var(--primary); color: white; border: none; 
+            border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+
+        /* ADMIN & MODALS */
+        .modal {
+            position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9);
+            z-index: 2000; display: flex; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; width: 90%; max-width: 450px; border-radius: 15px;
+            padding: 20px; max-height: 90vh; overflow-y: auto;
+        }
+        input, select, textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        
+        /* CARRITO FLOTANTE */
+        #cart-float {
+            position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px;
+            background: var(--primary); border-radius: 50%; border: 2px solid var(--accent);
+            display: flex; align-items: center; justify-content: center; color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 1000;
+        }
+        .badge { position: absolute; top: -5px; right: -5px; background: red; color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+<audio id="snd-click" src="https://assets.mixkit.co/sfx/preview/mixkit-modern-technology-select-3124.mp3"></audio>
+
+<section id="portada">
+    <div class="portada-content">
+        <h1>LA ESTRELLA SUPREMA</h1>
+        <p>Calidad Global</p>
+        <button class="btn-main" onclick="enterShop()">ENTRAR A TIENDA</button>
+    </div>
+</section>
+
+<section id="tienda" class="hidden">
+    <div class="container">
+        <div onclick="adminLogin()" style="position: absolute; top: 0; right: 0; width: 50px; height: 50px; z-index: 500;"></div>
+
+        <input type="text" id="search" placeholder="🔍 Buscar producto..." onkeyup="renderShop()">
+        
+        <div id="cat-bar" class="cat-bar"></div>
+
+        <h3 id="cat-title" style="color:var(--primary); margin-top:0;">TODOS</h3>
+        <div id="grid-products" class="grid">Cargando...</div>
+    </div>
+</section>
+
+<div id="cart-float" class="hidden" onclick="toggleCart()">
+    🛒 <div id="cart-badge" class="badge hidden">0</div>
+</div>
+
+<div id="modal-cart" class="modal hidden">
+    <div class="modal-content">
+        <h2>Tu Carrito 🛒</h2>
+        <div id="cart-list"></div>
+        <h3 style="text-align: right;">Total: <span id="cart-total">$0</span></h3>
+        <button class="btn-main" style="width:100%; margin-top:10px;" onclick="sendOrder()">PEDIR POR WHATSAPP</button>
+        <button onclick="toggleCart()" style="width:100%; margin-top:10px; background:transparent; border:none; color:grey;">Cerrar</button>
+    </div>
+</div>
+
+<div id="modal-admin" class="modal hidden">
+    <div class="modal-content">
+        <h2 style="text-align:center;">PANEL DE CONTROL</h2>
+        
+        <div style="background:#eee; padding:10px; border-radius:10px; margin-bottom:15px;">
+            <h4>1. Crear Producto</h4>
+            <input id="new-name" placeholder="Nombre (ej: Combo Familiar)">
+            <textarea id="new-desc" placeholder="Descripción (ej: Trae 2paq pollo, 1 aceite...)" rows="3"></textarea>
+            <input id="new-price" type="number" placeholder="Precio (Sólo números)">
+            <select id="new-cat"></select>
+            <p style="font-size:12px; color:red;">* Usa imágenes ligeras o tardará en guardar</p>
+            <input type="file" id="new-img" accept="image/*">
+            <button class="add-btn" onclick="saveProduct()">GUARDAR EN LA NUBE ☁️</button>
+        </div>
+
+        <div style="background:#eee; padding:10px; border-radius:10px;">
+            <h4>2. Categorías</h4>
+            <input id="new-cat-name" placeholder="Nueva Categoría">
+            <button class="add-btn" onclick="addCategory()">Crear Categoría</button>
+            <hr>
+            <div id="admin-cat-list"></div>
+        </div>
+        
+        <button onclick="document.getElementById('modal-admin').classList.add('hidden')" style="width:100%; margin-top:15px; padding:10px;">Cerrar Panel</button>
+    </div>
+</div>
+
+<script>
+    // --- 1. CONEXIÓN A FIREBASE ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyCJbDPG-EC19g7ifX4SKF85uAsOF0ODHSo",
+      authDomain: "la-estrella-suprema.firebaseapp.com",
+      databaseURL: "https://la-estrella-suprema-default-rtdb.firebaseio.com",
+      projectId: "la-estrella-suprema",
+      storageBucket: "la-estrella-suprema.firebasestorage.app",
+      messagingSenderId: "246077605279",
+      appId: "1:246077605279:web:9b0556eab180f38f2369aa"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const dbRef = firebase.database().ref('tienda_v2'); 
+
+    // --- 2. VARIABLES GLOBALES ---
+    let appData = { items: [], cats: ["COMBOS", "CIGARROS"] };
+    let cart = [];
+    let currentCat = 'TODOS';
+
+    // --- 3. ESCUCHAR LA NUBE (Carga automática) ---
+    dbRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            appData = data;
+            // Asegurar que existan arrays
+            if(!appData.items) appData.items = [];
+            if(!appData.cats) appData.cats = ["COMBOS"];
+        } else {
+            // Si está vacío, inicializar con cigarros
+            initDefaultData();
+        }
+        renderUI();
+    });
+
+    function initDefaultData() {
+        appData = {
+            items: [
+                { id: 1, name: "H.Upman Selecto", desc: "Cigarro fuerte original", price: 400, cat: "CIGARROS", img: "https://via.placeholder.com/150/000000/FFFFFF/?text=H.Upman" },
+                { id: 2, name: "Popular Rojo", desc: "Cajetilla blanda", price: 400, cat: "CIGARROS", img: "https://via.placeholder.com/150/FF0000/FFFFFF/?text=Popular" }
+            ],
+            cats: ["COMBOS", "CIGARROS", "ASEO"]
+        };
+        dbRef.set(appData); // Guardar inicialización
+    }
+
+    // --- 4. RENDERIZADO (Mostrar cosas en pantalla) ---
+    function renderUI() {
+        // Categorías
+        const bar = document.getElementById('cat-bar');
+        const sel = document.getElementById('new-cat');
+        const listAdm = document.getElementById('admin-cat-list');
+        
+        let htmlBar = `<button class="cat-btn ${currentCat==='TODOS'?'active':''}" onclick="filter('TODOS')">TODOS</button>`;
+        let htmlSel = ``;
+        let htmlAdm = ``;
+
+        appData.cats.forEach((c, i) => {
+            htmlBar += `<button class="cat-btn ${currentCat===c?'active':''}" onclick="filter('${c}')">${c}</button>`;
+            htmlSel += `<option value="${c}">${c}</option>`;
+            htmlAdm += `<div style="display:flex; justify-content:space-between; margin-top:5px;"><span>${c}</span> <button onclick="delCat(${i})" style="color:red;">Borrar</button></div>`;
+        });
+
+        bar.innerHTML = htmlBar;
+        sel.innerHTML = htmlSel;
+        listAdm.innerHTML = htmlAdm;
+
+        renderShop();
+    }
+
+    function renderShop() {
+        const grid = document.getElementById('grid-products');
+        const search = document.getElementById('search').value.toLowerCase();
+        grid.innerHTML = '';
+
+        const filtered = appData.items.filter(p => {
+            return (currentCat === 'TODOS' || p.cat === currentCat) && 
+                   (p.name.toLowerCase().includes(search) || (p.desc && p.desc.toLowerCase().includes(search)));
+        });
+
+        if(filtered.length === 0) { grid.innerHTML = '<p style="text-align:center; width:100%;">No hay productos.</p>'; return; }
+
+        filtered.forEach(p => {
+            grid.innerHTML += `
+                <div class="card">
+                    <img src="${p.img}" loading="lazy">
+                    <div class="card-body">
+                        <div class="card-title">${p.name}</div>
+                        <div class="card-desc">${p.desc || ''}</div>
+                        <span class="card-price">$${p.price}</span>
+                        <button class="add-btn" onclick="addToCart(${p.id})">AÑADIR AL CARRITO</button>
+                    </div>
+                    ${ p.cat ? '' : '' /* Botón eliminar solo en admin si se quiere agregar luego */ } 
+                </div>`;
+        });
+    }
+
+    // --- 5. GUARDAR DATOS (Con Compresor de Imágenes) ---
+    function saveProduct() {
+        const name = document.getElementById('new-name').value;
+        const desc = document.getElementById('new-desc').value;
+        const price = document.getElementById('new-price').value;
+        const cat = document.getElementById('new-cat').value;
+        const file = document.getElementById('new-img').files[0];
+
+        if(!name || !price) return alert("❌ Faltan datos obligatorios (Nombre o Precio)");
+
+        // Función interna para enviar a la nube
+        const sendToCloud = (imgUrl) => {
+            const newItem = {
+                id: Date.now(),
+                name: name,
+                desc: desc,
+                price: parseFloat(price),
+                cat: cat,
+                img: imgUrl
+            };
+            
+            if(!appData.items) appData.items = [];
+            appData.items.push(newItem);
+
+            // INTENTO DE GUARDADO
+            dbRef.set(appData)
+                .then(() => {
+                    alert("✅ ¡Producto Guardado con Éxito!");
+                    // Limpiar campos
+                    document.getElementById('new-name').value = '';
+                    document.getElementById('new-desc').value = '';
+                    document.getElementById('new-price').value = '';
+                })
+                .catch((error) => {
+                    alert("⚠️ ERROR AL GUARDAR: " + error.message + "\n\nPosible causa: La imagen es muy pesada o internet lento.");
+                });
+        };
+
+        if (file) {
+            // Compresión básica usando Canvas
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    // Reducir tamaño máx a 300px (Suficiente para celular)
+                    const MAX_WIDTH = 300; 
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // Bajar calidad al 70%
+                    sendToCloud(dataUrl);
+                };
+            };
+            reader.readAsDataURL(file);
+        } else {
+            sendToCloud("https://via.placeholder.com/150?text=Sin+Foto");
+        }
+    }
+
+    function addCategory() {
+        const n = document.getElementById('new-cat-name').value.toUpperCase();
+        if(n && !appData.cats.includes(n)) {
+            appData.cats.push(n);
+            dbRef.set(appData);
+            document.getElementById('new-cat-name').value = '';
+        }
+    }
+
+    function delCat(index) {
+        if(confirm("¿Seguro que borras esta categoría?")) {
+            appData.cats.splice(index, 1);
+            dbRef.set(appData);
+        }
+    }
+
+    // --- 6. FUNCIONALIDAD TIENDA ---
+    function enterShop() {
+        document.getElementById('portada').classList.add('hidden');
+        document.getElementById('tienda').classList.remove('hidden');
+        document.getElementById('cart-float').classList.remove('hidden');
+    }
+
+    function filter(c) { currentCat = c; renderUI(); }
+
+    function addToCart(id) {
+        const p = appData.items.find(x => x.id === id);
+        const exist = cart.find(x => x.id === id);
+        if(exist) exist.qty++; else cart.push({...p, qty:1});
+        document.getElementById('snd-click').play();
+        updateCart();
+    }
+
+    function updateCart() {
+        const b = document.getElementById('cart-badge');
+        const q = cart.reduce((a,c) => a+c.qty, 0);
+        b.innerText = q;
+        b.classList.toggle('hidden', q===0);
+    }
+
+    function toggleCart() {
+        const m = document.getElementById('modal-cart');
+        if(m.classList.contains('hidden')) {
+            const list = document.getElementById('cart-list');
+            list.innerHTML = '';
+            let total = 0;
+            cart.forEach((c,i) => {
+                const sub = c.price*c.qty;
+                total += sub;
+                list.innerHTML += `<div style="display:flex; justify-content:space-between; margin:10px 0; border-bottom:1px solid #eee;">
+                    <div><b>${c.name}</b><br><small>${c.desc || ''}</small></div>
+                    <div style="text-align:right;">${c.qty} x $${c.price}<br><button onclick="cart.splice(${i},1);toggleCart();toggleCart();updateCart()" style="color:red;border:none;background:none;">Eliminar</button></div>
+                </div>`;
+            });
+            document.getElementById('cart-total').innerText = '$' + total;
+            m.classList.remove('hidden');
+        } else {
+            m.classList.add('hidden');
+        }
+    }
+
+    function sendOrder() {
+        let msg = "🌟 *PEDIDO NUEVO* 🌟%0A%0A";
+        let total = 0;
+        cart.forEach(c => { msg += `▪️ ${c.name} (x${c.qty}) - $${c.price*c.qty}%0A   _${c.desc || ''}_%0A`; total += c.price*c.qty; });
+        msg += `%0A💰 *TOTAL: $${total}*%0A%0A📍 *Datos:*%0A- Nombre:%0A- Dirección:`;
+        window.open(`https://wa.me/5358876921?text=${msg}`);
+    }
+
+    function adminLogin() {
+        const u = prompt("Usuario:");
+        const p = prompt("Contraseña:");
+        if(u==="HÉCTOR" && p==="VIRTUS123VIRTUS") document.getElementById('modal-admin').classList.remove('hidden');
+        else alert("Acceso denegado");
+    }
+
+</script>
+</body>
+</html>
